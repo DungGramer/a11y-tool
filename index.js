@@ -9,8 +9,6 @@ function render() {
   document.body.appendChild(container);
 }
 
-function location() {}
-
 
 
 export function a11y() {
