@@ -1,0 +1,14 @@
+.a11y-tool {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 200px;
+  height: 100px;
+  background-color: teal;
+  border-radius: 8px;
+  cursor: move;
+  user-select: none;
+  -webkit-user-drag: none;
+  z-index: 9;
+
+}
