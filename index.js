@@ -15,4 +15,5 @@ export function a11y() {
   render();
   
   drag(".a11y-tool", ".adsv");
+  // drag(".a11y-tool");
 }

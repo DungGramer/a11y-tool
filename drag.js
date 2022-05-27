@@ -1,6 +1,6 @@
 export function drag(dragTarget, dragScope) {
   let targetElement = document.querySelector(dragTarget);
-  let scopeElement = document.querySelector(dragScope);
+  let scopeElement = dragScope === undefined ? window : document.querySelector(dragScope);
   let xOffset = 0;
   let yOffset = 0;
 
@@ -11,7 +11,7 @@ export function drag(dragTarget, dragScope) {
     e.preventDefault();
     e.stopPropagation();
     targetElement = document.querySelector(dragTarget);
-    scopeElement = document.querySelector(dragScope);
+    scopeElement = dragScope === undefined ? window : document.querySelector(dragScope);
     const { left, top } = targetElement.getBoundingClientRect();
 
     let clientX, clientY, typeListener;
@@ -82,47 +82,43 @@ function snapCorner(dragElement, dragScope) {
 
   let { left, top, width, height } = dragElement.getBoundingClientRect();
 
-  let leftScope = dragScope.getBoundingClientRect().left;
-  let topScope = dragScope.getBoundingClientRect().top;
-  let widthScope = dragScope.getBoundingClientRect().width;
-  let heightScope = dragScope.getBoundingClientRect().height;
 
   let [centerX, centerY] = [left + width / 2, top + height / 2];
   
   let [safeX, safeY] = [left, top];
-  const { minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight } = getRangeScope(
+  const { minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight, widthScope, heightScope, xScope, yScope } = getRangeScope(
     dragElement,
     dragScope
     );
   // console.log(`📕 centerX: ${centerX} centerY: ${centerY}`);
-  // console.log(minWindowWidth, maxWindowWidth / 2, minWindowHeight, maxWindowHeight / 2);
-  // console.log(`📕 minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight - 87:drag.js \n`, minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight);
+  // console.log(minScopeWidth, maxScopeWidth / 2, minScopeHeight, maxScopeHeight / 2);
+  // console.log(`📕 minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight - 87:drag.js \n`, minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight);
 
   //  [  X - Y ]
   // [[left-top], [right-top], [left-bottom], [right-bottom]]
   const rangeCorners = [
     [
-      { min: leftScope, max: leftScope + widthScope / 2 },
-      { min: topScope, max: topScope + heightScope / 2 },
+      { min: xScope, max: xScope + widthScope / 2 },
+      { min: yScope, max: yScope + heightScope / 2 },
     ],
     [
-      { min: leftScope + widthScope / 2, max: leftScope + widthScope },
-      { min: topScope, max: topScope + heightScope / 2 },
+      { min: xScope + widthScope / 2, max: xScope + widthScope },
+      { min: yScope, max: yScope + heightScope / 2 },
     ],
     [
-      { min: leftScope, max: leftScope + widthScope / 2 },
-      { min: topScope + heightScope / 2, max: topScope + heightScope },
+      { min: xScope, max: xScope + widthScope / 2 },
+      { min: yScope + heightScope / 2, max: yScope + heightScope },
     ],
     [
-      { min: leftScope + widthScope / 2, max: leftScope + widthScope },
-      { min: topScope + heightScope / 2, max: topScope + heightScope },
+      { min: xScope + widthScope / 2, max: xScope + widthScope },
+      { min: yScope + heightScope / 2, max: yScope + heightScope },
     ],
   ];
   const snapCorners = [
-    [minWindowWidth, minWindowHeight],
-    [maxWindowWidth, minWindowHeight],
-    [minWindowWidth, maxWindowHeight],
-    [maxWindowWidth, maxWindowHeight],
+    [minScopeWidth, minScopeHeight],
+    [maxScopeWidth, minScopeHeight],
+    [minScopeWidth, maxScopeHeight],
+    [maxScopeWidth, maxScopeHeight],
   ];
 
   for (let i = 0; i < rangeCorners.length; i++) {
@@ -157,43 +153,57 @@ function snapCorner(dragElement, dragScope) {
 function safeMoveInnerView(left, top, dragElement, dragScope) {
   if (dragElement === null || dragScope === null) return;
 
-  const { minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight } =
+  const { minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight } =
     getRangeScope(dragElement, dragScope);
 
   let [safeX, safeY] = [left, top];
 
-  if (left < minWindowWidth) {
-    safeX = minWindowWidth;
-  } else if (left > maxWindowWidth) {
-    safeX = maxWindowWidth;
+  if (left < minScopeWidth) {
+    safeX = minScopeWidth;
+  } else if (left > maxScopeWidth) {
+    safeX = maxScopeWidth;
   }
 
-  if (top < minWindowHeight) {
-    safeY = minWindowHeight;
-  } else if (top > maxWindowHeight) {
-    safeY = maxWindowHeight;
+  if (top < minScopeHeight) {
+    safeY = minScopeHeight;
+  } else if (top > maxScopeHeight) {
+    safeY = maxScopeHeight;
   }
 
   return [safeX, safeY];
 }
 
 function getRangeScope(dragElement, dragScope = window) {
-  let maxWindowWidth, maxWindowHeight, minWindowWidth, minWindowHeight;
+  let maxScopeWidth, maxScopeHeight, minScopeWidth, minScopeHeight, widthScope, heightScope, xScope, yScope;
 
   if (dragScope === window) {
-    [maxWindowWidth, maxWindowHeight] = [
+    [minScopeWidth, minScopeHeight] = [0, 0];
+    [maxScopeWidth, maxScopeHeight] = [
       window.innerWidth - dragElement.clientWidth,
       window.innerHeight - dragElement.clientHeight,
     ];
-    [minWindowWidth, minWindowHeight] = [0, 0];
+
+    [widthScope, heightScope] = [window.innerWidth, window.innerHeight];
+
+    [xScope, yScope] = [0, 0];
   } else if (dragScope instanceof Node) {
-    minWindowWidth = dragScope.getBoundingClientRect().left;
-    minWindowHeight = dragScope.getBoundingClientRect().top;
-    [maxWindowWidth, maxWindowHeight] = [
-      minWindowWidth + dragScope.clientWidth - dragElement.clientWidth,
-      minWindowHeight + dragScope.clientHeight - dragElement.clientHeight,
+    const scopeRect = dragScope.getBoundingClientRect();
+
+    minScopeWidth = scopeRect.left;
+    minScopeHeight = scopeRect.top;
+
+    widthScope = scopeRect.width;
+    heightScope = scopeRect.height;
+
+    [maxScopeWidth, maxScopeHeight] = [
+      minScopeWidth + widthScope - dragElement.clientWidth,
+      minScopeHeight + heightScope - dragElement.clientHeight,
     ];
+
+
+    xScope = scopeRect.left;
+    yScope = scopeRect.top;
   }
 
-  return { minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight };
+  return { minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight, widthScope, heightScope, xScope, yScope};
 }
