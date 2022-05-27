@@ -1,17 +1,18 @@
 export function drag(dragTarget, dragScope) {
-  let dragElement = document.querySelector(dragTarget);
+  let targetElement = document.querySelector(dragTarget);
+  let scopeElement = document.querySelector(dragScope);
   let xOffset = 0;
   let yOffset = 0;
 
-
-  dragElement.addEventListener("mousedown", startDrag, true);
-  dragElement.addEventListener("touchstart", startDrag, true);
+  targetElement.addEventListener("mousedown", startDrag, true);
+  targetElement.addEventListener("touchstart", startDrag, true);
 
   function startDrag(e) {
     e.preventDefault();
     e.stopPropagation();
-    dragElement = document.querySelector(dragTarget);
-    const { left, top } = dragElement.getBoundingClientRect();
+    targetElement = document.querySelector(dragTarget);
+    scopeElement = document.querySelector(dragScope);
+    const { left, top } = targetElement.getBoundingClientRect();
 
     let clientX, clientY, typeListener;
 
@@ -37,7 +38,7 @@ export function drag(dragTarget, dragScope) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (dragElement === null) return;
+    if (targetElement === null) return;
 
     let clientX, clientY;
 
@@ -55,57 +56,72 @@ export function drag(dragTarget, dragScope) {
     const left = clientX - xOffset;
     const top = clientY - yOffset;
 
-    let [safeX, safeY] = safeMoveInnerView(left, top, dragElement, document.querySelector('#root'));
+    let [safeX, safeY] = safeMoveInnerView(
+      left,
+      top,
+      targetElement,
+      scopeElement
+    );
 
-    dragElement.style.left = `${safeX}px`;
-    dragElement.style.top = `${safeY}px`;
+    targetElement.style.left = `${safeX}px`;
+    targetElement.style.top = `${safeY}px`;
   }
 
   document.addEventListener("mouseup", () => {
-    if (dragElement) {
-      snapCorner(dragElement);
-      dragElement = null;
+    if (targetElement) {
+      snapCorner(targetElement, scopeElement);
+      targetElement = null;
       window.removeEventListener("mousemove", dragObject, true);
       window.removeEventListener("touchmove", dragObject, true);
     }
   });
 }
 
-function snapCorner(dragElement) {
-  if (dragElement === null) return;
+function snapCorner(dragElement, dragScope) {
+  if (dragElement === null || dragScope === null) return;
 
-  let { left, top } = dragElement.getBoundingClientRect();
+  let { left, top, width, height } = dragElement.getBoundingClientRect();
 
+  let leftScope = dragScope.getBoundingClientRect().left;
+  let topScope = dragScope.getBoundingClientRect().top;
+  let widthScope = dragScope.getBoundingClientRect().width;
+  let heightScope = dragScope.getBoundingClientRect().height;
+
+  let [centerX, centerY] = [left + width / 2, top + height / 2];
+  
   let [safeX, safeY] = [left, top];
-  const [maxWindowWidth, maxWindowHeight] = [
-    window.innerWidth - dragElement.clientWidth,
-    window.innerHeight - dragElement.clientHeight,
-  ];
+  const { minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight } = getRangeScope(
+    dragElement,
+    dragScope
+    );
+  // console.log(`📕 centerX: ${centerX} centerY: ${centerY}`);
+  // console.log(minWindowWidth, maxWindowWidth / 2, minWindowHeight, maxWindowHeight / 2);
+  // console.log(`📕 minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight - 87:drag.js \n`, minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight);
 
   //  [  X - Y ]
   // [[left-top], [right-top], [left-bottom], [right-bottom]]
   const rangeCorners = [
     [
-      { min: 0, max: maxWindowWidth / 2 },
-      { min: 0, max: maxWindowHeight / 2 },
+      { min: leftScope, max: leftScope + widthScope / 2 },
+      { min: topScope, max: topScope + heightScope / 2 },
     ],
     [
-      { min: maxWindowWidth / 2, max: maxWindowWidth },
-      { min: 0, max: maxWindowHeight / 2 },
+      { min: leftScope + widthScope / 2, max: leftScope + widthScope },
+      { min: topScope, max: topScope + heightScope / 2 },
     ],
     [
-      { min: 0, max: maxWindowWidth / 2 },
-      { min: maxWindowHeight / 2, max: maxWindowHeight },
+      { min: leftScope, max: leftScope + widthScope / 2 },
+      { min: topScope + heightScope / 2, max: topScope + heightScope },
     ],
     [
-      { min: maxWindowWidth / 2, max: maxWindowWidth },
-      { min: maxWindowHeight / 2, max: maxWindowHeight },
+      { min: leftScope + widthScope / 2, max: leftScope + widthScope },
+      { min: topScope + heightScope / 2, max: topScope + heightScope },
     ],
   ];
   const snapCorners = [
-    [0, 0],
-    [maxWindowWidth, 0],
-    [0, maxWindowHeight],
+    [minWindowWidth, minWindowHeight],
+    [maxWindowWidth, minWindowHeight],
+    [minWindowWidth, maxWindowHeight],
     [maxWindowWidth, maxWindowHeight],
   ];
 
@@ -113,10 +129,10 @@ function snapCorner(dragElement) {
     const [rangeCorner, snapCorner] = [rangeCorners[i], snapCorners[i]];
 
     if (
-      left >= rangeCorner[0].min &&
-      left <= rangeCorner[0].max &&
-      top >= rangeCorner[1].min &&
-      top <= rangeCorner[1].max
+      centerX >= rangeCorner[0].min &&
+      centerX <= rangeCorner[0].max &&
+      centerY >= rangeCorner[1].min &&
+      centerY <= rangeCorner[1].max
     ) {
       [safeX, safeY] = snapCorner;
       break;
@@ -138,26 +154,12 @@ function snapCorner(dragElement) {
   dragElement.style.left = `${safeX}px`;
 }
 
-function safeMoveInnerView(left, top, dragElement, dragScope = window) {
-  if (dragElement === null) return;
+function safeMoveInnerView(left, top, dragElement, dragScope) {
+  if (dragElement === null || dragScope === null) return;
 
-  let maxWindowWidth, maxWindowHeight, minWindowWidth, minWindowHeight;
-  
-  switch (dragScope) {
-    case window:
-      [maxWindowWidth, maxWindowHeight] = [
-        window.innerWidth - dragElement.clientWidth,
-        window.innerHeight - dragElement.clientHeight,
-      ];
-      [minWindowWidth, minWindowHeight] = [0, 0];
-    default:
-      minWindowWidth = dragScope.getBoundingClientRect().left;
-      minWindowHeight = dragScope.getBoundingClientRect().top;
-      [maxWindowWidth, maxWindowHeight] = [
-        (minWindowWidth + dragScope.clientWidth) - dragElement.clientWidth,
-        (minWindowHeight + dragScope.clientHeight) - dragElement.clientHeight,
-      ];
-  }
+  const { minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight } =
+    getRangeScope(dragElement, dragScope);
+
   let [safeX, safeY] = [left, top];
 
   if (left < minWindowWidth) {
@@ -173,4 +175,25 @@ function safeMoveInnerView(left, top, dragElement, dragScope = window) {
   }
 
   return [safeX, safeY];
+}
+
+function getRangeScope(dragElement, dragScope = window) {
+  let maxWindowWidth, maxWindowHeight, minWindowWidth, minWindowHeight;
+
+  if (dragScope === window) {
+    [maxWindowWidth, maxWindowHeight] = [
+      window.innerWidth - dragElement.clientWidth,
+      window.innerHeight - dragElement.clientHeight,
+    ];
+    [minWindowWidth, minWindowHeight] = [0, 0];
+  } else if (dragScope instanceof Node) {
+    minWindowWidth = dragScope.getBoundingClientRect().left;
+    minWindowHeight = dragScope.getBoundingClientRect().top;
+    [maxWindowWidth, maxWindowHeight] = [
+      minWindowWidth + dragScope.clientWidth - dragElement.clientWidth,
+      minWindowHeight + dragScope.clientHeight - dragElement.clientHeight,
+    ];
+  }
+
+  return { minWindowWidth, maxWindowWidth, minWindowHeight, maxWindowHeight };
 }
