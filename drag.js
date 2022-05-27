@@ -1,8 +1,8 @@
-export function drag(dragTarget, dragScope) {
+export function drag(dragTarget, dragScope, hasSnapCorner) {
   let targetElement = document.querySelector(dragTarget);
-  let scopeElement = dragScope === undefined ? window : document.querySelector(dragScope);
-  let xOffset = 0;
-  let yOffset = 0;
+  let scopeElement =
+    dragScope === undefined ? window : document.querySelector(dragScope);
+  let [xOffset, yOffset] = [0, 0];
 
   targetElement.addEventListener("mousedown", startDrag, true);
   targetElement.addEventListener("touchstart", startDrag, true);
@@ -10,8 +10,10 @@ export function drag(dragTarget, dragScope) {
   function startDrag(e) {
     e.preventDefault();
     e.stopPropagation();
+
     targetElement = document.querySelector(dragTarget);
-    scopeElement = dragScope === undefined ? window : document.querySelector(dragScope);
+    scopeElement =
+      dragScope === undefined ? window : document.querySelector(dragScope);
     const { left, top } = targetElement.getBoundingClientRect();
 
     let clientX, clientY, typeListener;
@@ -69,7 +71,8 @@ export function drag(dragTarget, dragScope) {
 
   document.addEventListener("mouseup", () => {
     if (targetElement) {
-      snapCorner(targetElement, scopeElement);
+      if (hasSnapCorner === true) snapCorner(targetElement, scopeElement);
+
       targetElement = null;
       window.removeEventListener("mousemove", dragObject, true);
       window.removeEventListener("touchmove", dragObject, true);
@@ -82,17 +85,19 @@ function snapCorner(dragElement, dragScope) {
 
   let { left, top, width, height } = dragElement.getBoundingClientRect();
 
-
   let [centerX, centerY] = [left + width / 2, top + height / 2];
-  
-  let [safeX, safeY] = [left, top];
-  const { minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight, widthScope, heightScope, xScope, yScope } = getRangeScope(
-    dragElement,
-    dragScope
-    );
-  // console.log(`📕 centerX: ${centerX} centerY: ${centerY}`);
-  // console.log(minScopeWidth, maxScopeWidth / 2, minScopeHeight, maxScopeHeight / 2);
-  // console.log(`📕 minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight - 87:drag.js \n`, minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight);
+
+  let [safeX, safeY] = [0, 0];
+  const {
+    minScopeWidth,
+    maxScopeWidth,
+    minScopeHeight,
+    maxScopeHeight,
+    widthScope,
+    heightScope,
+    xScope,
+    yScope,
+  } = getRangeScope(dragElement, dragScope);
 
   //  [  X - Y ]
   // [[left-top], [right-top], [left-bottom], [right-bottom]]
@@ -121,7 +126,7 @@ function snapCorner(dragElement, dragScope) {
     [maxScopeWidth, maxScopeHeight],
   ];
 
-  for (let i = 0; i < rangeCorners.length; i++) {
+  for (let i = 0; i < rangeCorners.length; ++i) {
     const [rangeCorner, snapCorner] = [rangeCorners[i], snapCorners[i]];
 
     if (
@@ -173,8 +178,15 @@ function safeMoveInnerView(left, top, dragElement, dragScope) {
   return [safeX, safeY];
 }
 
-function getRangeScope(dragElement, dragScope = window) {
-  let maxScopeWidth, maxScopeHeight, minScopeWidth, minScopeHeight, widthScope, heightScope, xScope, yScope;
+function getRangeScope(dragElement, dragScope) {
+  let maxScopeWidth,
+    maxScopeHeight,
+    minScopeWidth,
+    minScopeHeight,
+    widthScope,
+    heightScope,
+    xScope,
+    yScope;
 
   if (dragScope === window) {
     [minScopeWidth, minScopeHeight] = [0, 0];
@@ -200,10 +212,18 @@ function getRangeScope(dragElement, dragScope = window) {
       minScopeHeight + heightScope - dragElement.clientHeight,
     ];
 
-
     xScope = scopeRect.left;
     yScope = scopeRect.top;
   }
 
-  return { minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight, widthScope, heightScope, xScope, yScope};
+  return {
+    minScopeWidth,
+    maxScopeWidth,
+    minScopeHeight,
+    maxScopeHeight,
+    widthScope,
+    heightScope,
+    xScope,
+    yScope,
+  };
 }
