@@ -11,6 +11,7 @@
   will-change: top, left;
   left: 0;
   bottom: 0;
+  touch-action: none;
 }
 
 .a11y-tool::before {
