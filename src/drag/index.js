@@ -14,6 +14,6 @@ function render() {
 export function a11y() {
   render();
   
-  drag(".a11y-tool", ".adsv", true);
-  // drag(".a11y-tool", undefined, true);
+  // drag(".a11y-tool", "main", true);
+  drag(".a11y-tool", undefined, false);
 }
