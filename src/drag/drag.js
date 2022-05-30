@@ -1,7 +1,12 @@
+/**
+ * @param {{ dragTarget: string; dragArea?: boolean; snapsCorner?: boolean; snapsVertical?: boolean; snapsHorizontal?: boolean; }} props
+ */
 export function drag(props) {
   const { dragTarget, dragArea, snapsVertical, snapsHorizontal } = props;
-  let snapsCorner = props.snapsCorner || (snapsHorizontal === true && snapsVertical === true);
+  /** @type {boolean} */
+  const snapsCorner = props.snapsCorner || (snapsHorizontal === true && snapsVertical === true);
 
+  /** @type {HTMLElement} */
   let targetElement = document.querySelector(dragTarget);
 
   let scopeElement = typeof dragArea === 'string' ? document.querySelector(dragArea) : window;
@@ -12,12 +17,15 @@ export function drag(props) {
   document.addEventListener('pointerdown', startDrag, true);
 
   // Event Listener when user click down
+  /**
+   * @param {PointerEvent} e
+   */
   function startDrag(e) {
     e.preventDefault();
     e.stopPropagation();
 
     targetElement = document.querySelector(dragTarget);
-    scopeElement = dragArea === undefined ? window : document.querySelector(dragArea);
+    scopeElement = typeof dragArea === 'string' ? document.querySelector(dragArea) : window;
     const { left, top } = targetElement.getBoundingClientRect();
 
     let { clientX, clientY, typeListener } = getClientCoordinates(e);
@@ -29,6 +37,9 @@ export function drag(props) {
   }
 
   // Event Listener when user press and move mouse
+  /**
+   * @param {PointerEvent} e
+   */
   function dragObject(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -51,11 +62,8 @@ export function drag(props) {
       if (snapsCorner === true) {
         snapCorner(targetElement, scopeElement);
       } else {
-        if (snapsHorizontal === true) snapHorizontal(targetElement, scopeElement);
-        if (snapsVertical === true) snapVertical(targetElement, scopeElement);
+        snapDirection(targetElement, scopeElement, snapsCorner, snapsHorizontal, snapsVertical);
       }
-
-      snapDirection(targetElement, scopeElement, snapsCorner, snapsHorizontal, snapsVertical);
 
       targetElement = null;
       window.removeEventListener('pointerdown', dragObject, true);
@@ -65,12 +73,23 @@ export function drag(props) {
 }
 
 // Get coordinates mouse when user click
+/**
+ * @param {PointerEvent} event
+ * @returns {{ clientX: number, clientY: number, typeListener: 'pointermove' }}
+ */
 function getClientCoordinates(event) {
   if (['pointerdown', 'pointermove'].includes(event.type)) {
     return { clientX: event.clientX, clientY: event.clientY, typeListener: 'pointermove' };
   }
 }
 
+/**
+ * @param {HTMLElement} dragElement
+ * @param {HTMLElement | Window} dragArea
+ * @param {boolean} snapsCorner
+ * @param {boolean} snapsHorizontal
+ * @param {boolean} snapsVertical
+ */
 function snapDirection(dragElement, dragArea, snapsCorner, snapsHorizontal, snapsVertical) {
   if (dragElement === null || dragArea === null) return;
   if ((snapsVertical === undefined && snapsHorizontal === undefined) || snapsCorner === undefined) return;
@@ -135,7 +154,12 @@ function snapDirection(dragElement, dragArea, snapsCorner, snapsHorizontal, snap
   animateDrag(dragElement, left, top, safeInnerRangeX, safeInnerRangeY);
 }
 
-// Snap to the corner of the scope
+/**
+ * Snap to the corner of the scope
+ * 
+ * @param {HTMLElement} dragElement
+ * @param {HTMLElement | Window} dragArea
+ */
 function snapCorner(dragElement, dragArea) {
   if (dragElement === null || dragArea === null) return;
 
@@ -189,6 +213,13 @@ function snapCorner(dragElement, dragArea) {
   animateDrag(dragElement, left, top, safeInnerRangeX, safeInnerRangeY);
 }
 
+/**
+ * @param {HTMLElement} dragElement
+ * @param {number} fromLeft
+ * @param {number} fromTop
+ * @param {number} toLeft
+ * @param {number} toTop
+ */
 function animateDrag(dragElement, fromLeft, fromTop, toLeft, toTop) {
   dragElement.animate(
     [
@@ -197,15 +228,21 @@ function animateDrag(dragElement, fromLeft, fromTop, toLeft, toTop) {
     ],
     {
       duration: 250,
-      fillMode: 'forwards',
-      timingFunction: 'ease-out',
+      easing: 'ease-out',
     }
   );
   dragElement.style.left = `${toLeft}px`;
   dragElement.style.top = `${toTop}px`;
 }
 
-// If the drag element is out of the scope, return the max or min coordinates of the scope
+/**
+ * If the drag element is out of the scope, return the max or min coordinates of the scope
+ * 
+ * @param {number} left
+ * @param {number} top
+ * @param {HTMLElement} dragElement
+ * @param {HTMLElement | Window} dragArea
+ */
 function validateInnerRangeCoordinates(left, top, dragElement, dragArea) {
   if (dragElement === null || dragArea === null) return;
 
@@ -228,19 +265,23 @@ function validateInnerRangeCoordinates(left, top, dragElement, dragArea) {
   return { safeInnerRangeX, safeInnerRangeY };
 }
 
+/**
+ * @param {HTMLElement} dragElement
+ * @param {HTMLElement | Window} dragArea
+ */
 function getRangeScope(dragElement, dragArea) {
-  let maxScopeWidth,
-    maxScopeHeight,
-    minScopeWidth,
-    minScopeHeight,
-    widthScope,
-    heightScope,
-    scopeX,
-    scopeY,
-    rangeLeft,
-    rangeTop,
-    rangeRight,
-    rangeBottom;
+  let maxScopeWidth;
+  let maxScopeHeight;
+  let minScopeWidth;
+  let minScopeHeight;
+  let widthScope;
+  let heightScope;
+  let scopeX;
+  let scopeY;
+  let rangeLeft;
+  let rangeTop;
+  let rangeRight;
+  let rangeBottom;
 
   if (dragArea === window) {
     [minScopeWidth, minScopeHeight] = [0, 0];
