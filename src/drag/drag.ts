@@ -1,31 +1,36 @@
-/**
- * @param {{ dragTarget: string; dragArea?: boolean; snapsCorner?: boolean; snapsVertical?: boolean; snapsHorizontal?: boolean; }} props
- */
-export function drag(props) {
+import {
+  ClientCoordinates,
+  InnerRangeCoordinates,
+  RangeScope,
+  RangeVertical,
+  RangeHorizontal,
+  DragProps,
+  Range,
+} from './drag.d';
+export function drag(props: DragProps) {
   const { dragTarget, dragArea, snapsVertical, snapsHorizontal } = props;
-  /** @type {boolean} */
-  const snapsCorner = props.snapsCorner || (snapsHorizontal === true && snapsVertical === true);
 
-  /** @type {HTMLElement} */
-  let targetElement = document.querySelector(dragTarget);
+  const snapsCorner: boolean = props.snapsCorner || (snapsHorizontal === true && snapsVertical === true);
+  let targetElement: HTMLElement | null = document.querySelector(dragTarget);
 
-  let scopeElement = typeof dragArea === 'string' ? document.querySelector(dragArea) : window;
+  let scopeElement: HTMLElement | Window | null = typeof dragArea === 'string' ? document.querySelector(dragArea) : window;
 
   // Coordinates of the mouse move end
   let [offsetX, offsetY] = [0, 0];
+  if (targetElement === null || scopeElement === null) return;
 
-  document.addEventListener('pointerdown', startDrag, true);
+  targetElement.addEventListener('pointerdown', startDrag, true);
 
   // Event Listener when user click down
-  /**
-   * @param {PointerEvent} e
-   */
-  function startDrag(e) {
+  function startDrag(e: PointerEvent) {
     e.preventDefault();
     e.stopPropagation();
 
     targetElement = document.querySelector(dragTarget);
     scopeElement = typeof dragArea === 'string' ? document.querySelector(dragArea) : window;
+
+    if (targetElement === null || scopeElement === null) return;
+
     const { left, top } = targetElement.getBoundingClientRect();
 
     let { clientX, clientY, typeListener } = getClientCoordinates(e);
@@ -33,18 +38,17 @@ export function drag(props) {
     // clientX and getBoundingClientRect() both use viewable area adjusted when scrolling aka 'viewport'
     offsetX = clientX - left;
     offsetY = clientY - top;
+
+    // Add event to window because we can handle drag outside of the targetElement
     window.addEventListener(typeListener, dragObject, true);
   }
 
   // Event Listener when user press and move mouse
-  /**
-   * @param {PointerEvent} e
-   */
-  function dragObject(e) {
+  function dragObject(e: PointerEvent) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (targetElement === null) return;
+    if (targetElement === null || scopeElement === null) return;
 
     let { clientX, clientY } = getClientCoordinates(e);
 
@@ -58,7 +62,7 @@ export function drag(props) {
   }
 
   document.addEventListener('pointerup', () => {
-    if (targetElement) {
+    if (targetElement && scopeElement) {
       if (snapsCorner === true) {
         snapCorner(targetElement, scopeElement);
       } else {
@@ -73,24 +77,26 @@ export function drag(props) {
 }
 
 // Get coordinates mouse when user click
-/**
- * @param {PointerEvent} event
- * @returns {{ clientX: number, clientY: number, typeListener: 'pointermove' }}
- */
-function getClientCoordinates(event) {
-  if (['pointerdown', 'pointermove'].includes(event.type)) {
-    return { clientX: event.clientX, clientY: event.clientY, typeListener: 'pointermove' };
+function getClientCoordinates(event: PointerEvent): ClientCoordinates {
+  const clientCoordinates: ClientCoordinates = { clientX: 0, clientY: 0, typeListener: 'pointermove' };
+
+  if (!['pointerdown', 'pointermove'].includes(event.type)) {
+    return clientCoordinates;
   }
+
+  return Object.assign(clientCoordinates, {
+    clientX: event.clientX,
+    clientY: event.clientY,
+  });
 }
 
-/**
- * @param {HTMLElement} dragElement
- * @param {HTMLElement | Window} dragArea
- * @param {boolean} snapsCorner
- * @param {boolean} snapsHorizontal
- * @param {boolean} snapsVertical
- */
-function snapDirection(dragElement, dragArea, snapsCorner, snapsHorizontal, snapsVertical) {
+function snapDirection(
+  dragElement: HTMLElement | null,
+  dragArea: HTMLElement | Window,
+  snapsCorner: boolean | undefined,
+  snapsHorizontal: boolean | undefined,
+  snapsVertical: boolean | undefined
+) {
   if (dragElement === null || dragArea === null) return;
   if ((snapsVertical === undefined && snapsHorizontal === undefined) || snapsCorner === undefined) return;
 
@@ -112,7 +118,7 @@ function snapDirection(dragElement, dragArea, snapsCorner, snapsHorizontal, snap
       snapCorner(dragElement, dragArea);
       return;
     case 'horizontal':
-      const rangeHorizontal = [
+      const rangeHorizontal: Array<RangeHorizontal> = [
         {
           rangeHeight: rangeTop,
           snapCoordinates: [left, minScopeHeight],
@@ -131,7 +137,7 @@ function snapDirection(dragElement, dragArea, snapsCorner, snapsHorizontal, snap
       }
       break;
     case 'vertical':
-      const rangeVertical = [
+      const rangeVertical: Array<RangeVertical> = [
         {
           rangeWidth: rangeLeft,
           snapCoordinates: [minScopeWidth, top],
@@ -154,13 +160,8 @@ function snapDirection(dragElement, dragArea, snapsCorner, snapsHorizontal, snap
   animateDrag(dragElement, left, top, safeInnerRangeX, safeInnerRangeY);
 }
 
-/**
- * Snap to the corner of the scope
- * 
- * @param {HTMLElement} dragElement
- * @param {HTMLElement | Window} dragArea
- */
-function snapCorner(dragElement, dragArea) {
+// Snap to the corner of the scope
+function snapCorner(dragElement: HTMLElement, dragArea: HTMLElement | Window) {
   if (dragElement === null || dragArea === null) return;
 
   let { left, top, width, height } = dragElement.getBoundingClientRect();
@@ -213,14 +214,7 @@ function snapCorner(dragElement, dragArea) {
   animateDrag(dragElement, left, top, safeInnerRangeX, safeInnerRangeY);
 }
 
-/**
- * @param {HTMLElement} dragElement
- * @param {number} fromLeft
- * @param {number} fromTop
- * @param {number} toLeft
- * @param {number} toTop
- */
-function animateDrag(dragElement, fromLeft, fromTop, toLeft, toTop) {
+function animateDrag(dragElement: HTMLElement, fromLeft: number, fromTop: number, toLeft: number, toTop: number) {
   dragElement.animate(
     [
       { left: `${fromLeft}px`, top: `${fromTop}px` },
@@ -235,17 +229,13 @@ function animateDrag(dragElement, fromLeft, fromTop, toLeft, toTop) {
   dragElement.style.top = `${toTop}px`;
 }
 
-/**
- * If the drag element is out of the scope, return the max or min coordinates of the scope
- * 
- * @param {number} left
- * @param {number} top
- * @param {HTMLElement} dragElement
- * @param {HTMLElement | Window} dragArea
- */
-function validateInnerRangeCoordinates(left, top, dragElement, dragArea) {
-  if (dragElement === null || dragArea === null) return;
-
+//  If the drag element is out of the scope, return the max or min coordinates of the scope
+function validateInnerRangeCoordinates(
+  left: number,
+  top: number,
+  dragElement: HTMLElement,
+  dragArea: HTMLElement | Window
+): InnerRangeCoordinates {
   const { minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight } = getRangeScope(dragElement, dragArea);
 
   let [safeInnerRangeX, safeInnerRangeY] = [left, top];
@@ -265,34 +255,27 @@ function validateInnerRangeCoordinates(left, top, dragElement, dragArea) {
   return { safeInnerRangeX, safeInnerRangeY };
 }
 
-/**
- * @param {HTMLElement} dragElement
- * @param {HTMLElement | Window} dragArea
- */
-function getRangeScope(dragElement, dragArea) {
-  let maxScopeWidth;
-  let maxScopeHeight;
-  let minScopeWidth;
-  let minScopeHeight;
-  let widthScope;
-  let heightScope;
-  let scopeX;
-  let scopeY;
-  let rangeLeft;
-  let rangeTop;
-  let rangeRight;
-  let rangeBottom;
+function getRangeScope(dragElement: HTMLElement, dragArea: HTMLElement | Window): RangeScope {
+  let maxScopeWidth = 0;
+  let maxScopeHeight = 0;
+  let minScopeWidth = 0;
+  let minScopeHeight = 0;
+  let widthScope = 0;
+  let heightScope = 0;
+  let scopeX = 0;
+  let scopeY = 0;
+  let rangeLeft: Range = { min: 0, max: 0 };
+  let rangeTop: Range = rangeLeft;
+  let rangeRight: Range = rangeLeft;
+  let rangeBottom: Range = rangeLeft;
 
   if (dragArea === window) {
-    [minScopeWidth, minScopeHeight] = [0, 0];
     [maxScopeWidth, maxScopeHeight] = [
       window.innerWidth - dragElement.clientWidth,
       window.innerHeight - dragElement.clientHeight,
     ];
 
     [widthScope, heightScope] = [window.innerWidth, window.innerHeight];
-
-    [scopeX, scopeY] = [0, 0];
 
     rangeLeft = { min: 0, max: window.innerWidth / 2 };
     rangeTop = { min: 0, max: window.innerHeight / 2 };
