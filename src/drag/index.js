@@ -15,5 +15,10 @@ export function a11y() {
   render();
   
   // drag(".a11y-tool", "main", true);
-  drag(".a11y-tool", undefined, false);
+  drag({
+    dragTarget: ".a11y-tool",
+    snapsCorner: true,
+    snapsVertical: true,
+    snapsHorizontal: true,
+  });
 }

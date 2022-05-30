@@ -14,7 +14,7 @@
   touch-action: none;
 }
 
-.a11y-tool::before {
+/* .a11y-tool::before {
   content: "";
   position: absolute;
   top: 0;
@@ -34,8 +34,8 @@
   width: 100%;
   height: 1px;
   background-color: red;
-}
-
+} */
+/* 
 .adsv::before {
   content: "";
   position: absolute;
@@ -56,4 +56,4 @@
   width: 100%;
   height: 1px;
   background-color: red;
-}
+} */
