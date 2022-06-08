@@ -17,10 +17,10 @@ export function a11y() {
   // drag(".a11y-tool", undefined, true);
   drag({
     dragTarget: ".a11y-tool",
-    snapsCorner: true,
-    // snapsVertical: true,
-    // snapsHorizontal: true,
-    snapPlacement: '',
+    // dragArea: 'main',
+
+    initLocation: [`50%`, '50%'],
+    snapPlacement: 'corner',
     // snap
   });
 }
