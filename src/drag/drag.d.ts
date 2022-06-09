@@ -24,12 +24,12 @@ export interface InnerRangeCoordinates {
 }
 
 export interface RangeScope {
-  minScopeWidth: number;
-  maxScopeWidth: number;
-  minScopeHeight: number;
-  maxScopeHeight: number;
-  widthScope: number;
-  heightScope: number;
+  scopeMinWidth: number;
+  scopeMaxWidth: number;
+  scopeMinHeight: number;
+  scopeMaxHeight: number;
+  scopeWidth: number;
+  scopeHeight: number;
   scopeX: number;
   scopeY: number;
   rangeLeft: Range;
@@ -48,13 +48,35 @@ export interface RangeHorizontal {
   snapCoordinates: number[];
 }
 
-export interface RangeCorners {
-  cornerName: string[SnapPlacement];
+interface RangeCorner {
   rangeWidth: Range;
   rangeHeight: Range;
   snapCoordinates: number[];
 }
 
-export type SnapPlacement = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'left-top' | 'left-bottom' | 'right-top' | 'right-bottom' | 'horizontal' | 'vertical' | 'both' | 'corner';
+export interface RangeCorners {
+  'top-left': RangeCorner;
+  'top-right': RangeCorner;
+  'bottom-left': RangeCorner;
+  'bottom-right': RangeCorner;
+}
+
+export const corners = ['top', 'right', 'bottom', 'left'];
+export const snapPlacement = [
+  'top-left',
+  'top-right',
+  'bottom-left',
+  'bottom-right',
+  'left-top',
+  'left-bottom',
+  'right-top',
+  'right-bottom',
+  'horizontal',
+  'vertical',
+  'both',
+  'corner',
+] as const;
+
+export type SnapPlacement = typeof snapPlacement[number];
 export type TargetElement = HTMLElement | null;
 export type ScopeElement = HTMLElement | Window | null;

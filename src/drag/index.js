@@ -13,13 +13,12 @@ function render() {
 
 export function a11y() {
   render();
-  
-  // drag(".a11y-tool", undefined, true);
+
   drag({
     dragTarget: ".a11y-tool",
     // dragArea: 'main',
 
-    initLocation: [`50%`, '50%'],
+    // initLocation: 'top-right',
     snapPlacement: 'corner',
     // snap
   });

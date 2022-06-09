@@ -9,8 +9,8 @@
   -webkit-user-drag: none;
   z-index: 9;
   will-change: top, left;
-  left: 0;
-  bottom: 0;
+  /* left: 0;
+  bottom: 0; */
   touch-action: none;
 }
 

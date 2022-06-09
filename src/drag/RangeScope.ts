@@ -1,12 +1,12 @@
 import { Range, RangeScope, InnerRangeCoordinates, ClientCoordinates } from './drag.d';
 
 export function getRangeScope(dragElement: HTMLElement, dragArea: HTMLElement | Window): RangeScope {
-  let maxScopeWidth = 0;
-  let maxScopeHeight = 0;
-  let minScopeWidth = 0;
-  let minScopeHeight = 0;
-  let widthScope = 0;
-  let heightScope = 0;
+  let scopeMaxWidth = 0;
+  let scopeMaxHeight = 0;
+  let scopeMinWidth = 0;
+  let scopeMinHeight = 0;
+  let scopeWidth = 0;
+  let scopeHeight = 0;
   let scopeX = 0;
   let scopeY = 0;
   let rangeLeft: Range = { min: 0, max: 0 };
@@ -15,50 +15,47 @@ export function getRangeScope(dragElement: HTMLElement, dragArea: HTMLElement | 
   let rangeBottom: Range = rangeLeft;
 
   if (dragArea === window) {
-    [maxScopeWidth, maxScopeHeight] = [
-      document.documentElement.clientWidth - dragElement.clientWidth,
-      document.documentElement.clientHeight - dragElement.clientHeight,
-    ];
-
-    [widthScope, heightScope] = [window.innerWidth, window.innerHeight];
+    [scopeWidth, scopeHeight] = [document.documentElement.clientWidth, document.documentElement.clientHeight];
+    [scopeMaxWidth, scopeMaxHeight] = [scopeWidth - dragElement.clientWidth, scopeHeight - dragElement.clientHeight];
 
     rangeLeft = { min: 0, max: window.innerWidth / 2 };
     rangeTop = { min: 0, max: window.innerHeight / 2 };
     rangeRight = { min: window.innerWidth / 2, max: window.innerWidth };
     rangeBottom = { min: window.innerHeight / 2, max: window.innerHeight };
+    
   } else if (dragArea instanceof Node) {
     const scopeRect = dragArea.getBoundingClientRect();
 
-    minScopeWidth = scopeRect.left;
-    minScopeHeight = scopeRect.top;
+    scopeWidth = scopeRect.width;
+    scopeHeight = scopeRect.height;
 
-    widthScope = scopeRect.width;
-    heightScope = scopeRect.height;
+    scopeMinWidth = scopeRect.left;
+    scopeMinHeight = scopeRect.top;
 
-    [maxScopeWidth, maxScopeHeight] = [
-      minScopeWidth + widthScope - dragElement.clientWidth,
-      minScopeHeight + heightScope - dragElement.clientHeight,
+    [scopeMaxWidth, scopeMaxHeight] = [
+      scopeMinWidth + scopeWidth - dragElement.offsetWidth,
+      scopeMinHeight + scopeHeight - dragElement.offsetHeight,
     ];
 
     scopeX = scopeRect.left;
     scopeY = scopeRect.top;
 
-    rangeLeft = { min: scopeX, max: scopeX + widthScope / 2 };
-    rangeTop = { min: scopeY, max: scopeY + heightScope / 2 };
-    rangeRight = { min: scopeX + widthScope / 2, max: scopeX + widthScope };
+    rangeLeft = { min: scopeX, max: scopeX + scopeWidth / 2 };
+    rangeTop = { min: scopeY, max: scopeY + scopeHeight / 2 };
+    rangeRight = { min: scopeX + scopeWidth / 2, max: scopeX + scopeWidth };
     rangeBottom = {
-      min: scopeY + heightScope / 2,
-      max: scopeY + heightScope,
+      min: scopeY + scopeHeight / 2,
+      max: scopeY + scopeHeight,
     };
   }
 
   return {
-    minScopeWidth,
-    maxScopeWidth,
-    minScopeHeight,
-    maxScopeHeight,
-    widthScope,
-    heightScope,
+    scopeMinWidth,
+    scopeMaxWidth,
+    scopeMinHeight,
+    scopeMaxHeight,
+    scopeWidth,
+    scopeHeight,
     scopeX,
     scopeY,
     rangeLeft,
@@ -75,20 +72,20 @@ export function validateInnerRangeCoordinates(
   dragElement: HTMLElement,
   dragArea: HTMLElement | Window
 ): InnerRangeCoordinates {
-  const { minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight } = getRangeScope(dragElement, dragArea);
+  const { scopeMinWidth, scopeMaxWidth, scopeMinHeight, scopeMaxHeight } = getRangeScope(dragElement, dragArea);
 
   let [safeInnerRangeX, safeInnerRangeY] = [left, top];
 
-  if (left < minScopeWidth) {
-    safeInnerRangeX = minScopeWidth;
-  } else if (left > maxScopeWidth) {
-    safeInnerRangeX = maxScopeWidth;
+  if (left < scopeMinWidth) {
+    safeInnerRangeX = scopeMinWidth;
+  } else if (left > scopeMaxWidth) {
+    safeInnerRangeX = scopeMaxWidth;
   }
 
-  if (top < minScopeHeight) {
-    safeInnerRangeY = minScopeHeight;
-  } else if (top > maxScopeHeight) {
-    safeInnerRangeY = maxScopeHeight;
+  if (top < scopeMinHeight) {
+    safeInnerRangeY = scopeMinHeight;
+  } else if (top > scopeMaxHeight) {
+    safeInnerRangeY = scopeMaxHeight;
   }
 
   return { safeInnerRangeX, safeInnerRangeY };

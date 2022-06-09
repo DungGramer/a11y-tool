@@ -1,21 +1,19 @@
 import { setTargetElementLocation } from './animateDrag';
 import { DragProps, TargetElement, ScopeElement } from './drag.d';
 import { validateInnerRangeCoordinates, getClientCoordinates } from './RangeScope';
-import { snapDirection, setLocalStorage } from './Snap';
+import { snapDirection, setLocalStorage, getRangeCorners } from './Snap';
+import { snapPlacement } from './drag.d';
 
 export function drag(props: DragProps) {
   const { dragTarget, dragArea, snapPlacement, initLocation } = props;
 
-  // const snapsCorner: boolean = props.snapsCorner || (snapsHorizontal === true && snapsVertical === true);
   let targetElement: TargetElement = document.querySelector(dragTarget);
-
   let scopeElement: ScopeElement = typeof dragArea === 'string' ? document.querySelector(dragArea) : window;
 
   // Coordinates of the mouse move end
   let [offsetX, offsetY] = [0, 0];
   if (targetElement === null || scopeElement === null) return;
-  setInitLocation(targetElement, initLocation);
-
+  setInitLocation(targetElement, scopeElement, initLocation);
 
   targetElement.addEventListener('pointerdown', startDrag, true);
 
@@ -70,13 +68,22 @@ export function drag(props: DragProps) {
   });
 }
 
-function setInitLocation(targetElement: TargetElement, initLocation: number[] | undefined) {
+function setInitLocation(targetElement: TargetElement, scopeElement: ScopeElement, initLocation: number[] | undefined) {
+  if (targetElement === null || scopeElement === null) return;
+
   const [leftLocalStorage, topLocalStorage] = [window.localStorage.getItem('left'), window.localStorage.getItem('top')];
 
   if (initLocation instanceof Array) {
     setTargetElementLocation(targetElement, initLocation);
     setLocalStorage(initLocation[0], initLocation[1]);
+  } else if (initLocation !== undefined && snapPlacement.includes(initLocation)) {
+    snapDirection(targetElement, scopeElement, initLocation, false);
   } else if (leftLocalStorage !== null && topLocalStorage !== null) {
     setTargetElementLocation(targetElement, leftLocalStorage, topLocalStorage);
+  } else {
+    const {rangeCorners} = getRangeCorners(targetElement, scopeElement);
+    const {snapCoordinates} = rangeCorners['bottom-right'];
+
+    setTargetElementLocation(targetElement, snapCoordinates[0], snapCoordinates[1]);
   }
 }

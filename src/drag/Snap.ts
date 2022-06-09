@@ -1,11 +1,12 @@
-import { animateDrag } from './animateDrag';
+import { animateDrag, setTargetElementLocation } from './animateDrag';
 import { RangeHorizontal, RangeVertical, RangeCorners, SnapPlacement } from './drag.d';
 import { getRangeScope } from './RangeScope';
 
 export function snapDirection(
   dragElement: HTMLElement | null,
   dragArea: HTMLElement | Window,
-  snapPlacement: SnapPlacement | undefined
+  snapPlacement: SnapPlacement | undefined,
+  animate = true
 ) {
   if (dragElement === null || dragArea === null || snapPlacement === undefined) return;
 
@@ -44,17 +45,21 @@ export function snapDirection(
     default:
       const { rangeCorners } = getRangeCorners(dragElement, dragArea);
 
-      for (const corner of rangeCorners) {
-        if (corner.cornerName.includes(snapPlacement)) {
+      for (const key in rangeCorners) {
+        const corner = rangeCorners[key as keyof RangeCorners];
+        if (snapPlacement === key || snapPlacement === key.split('-').reverse().join('-')) {
           [safeInnerRangeX, safeInnerRangeY] = corner.snapCoordinates;
-          setLocalStorage(safeInnerRangeX, safeInnerRangeY, corner.cornerName[0]);
+          setLocalStorage(safeInnerRangeX, safeInnerRangeY, key);
           break;
         }
       }
       break;
   }
-
-  animateDrag(dragElement, left, top, safeInnerRangeX, safeInnerRangeY);
+  if (animate === true) {
+    animateDrag(dragElement, left, top, safeInnerRangeX, safeInnerRangeY);
+  } else {
+    setTargetElementLocation(dragElement, safeInnerRangeX, safeInnerRangeY);
+  }
 }
 
 export function setLocalStorage(left: number, top: number, cornerName?: string) {
@@ -75,7 +80,9 @@ export function snapCorner(dragElement: HTMLElement, dragArea: HTMLElement | Win
   let [safeInnerRangeX, safeInnerRangeY] = [0, 0];
   const { rangeCorners } = getRangeCorners(dragElement, dragArea);
 
-  for (const corner of rangeCorners) {
+
+  for (const key in rangeCorners ) {
+    const corner = rangeCorners[key as keyof RangeCorners];
     if (
       centerX >= corner.rangeWidth.min &&
       centerX <= corner.rangeWidth.max &&
@@ -83,7 +90,7 @@ export function snapCorner(dragElement: HTMLElement, dragArea: HTMLElement | Win
       centerY <= corner.rangeHeight.max
     ) {
       [safeInnerRangeX, safeInnerRangeY] = corner.snapCoordinates;
-      setLocalStorage(safeInnerRangeX, safeInnerRangeY, corner.cornerName[0]);
+      setLocalStorage(safeInnerRangeX, safeInnerRangeY, key);
       break;
     }
   }
@@ -94,57 +101,53 @@ export function snapCorner(dragElement: HTMLElement, dragArea: HTMLElement | Win
 export function getRangeCorners(
   dragElement: HTMLElement,
   dragArea: HTMLElement | Window
-): { rangeCorners: RangeCorners[]; rangeVertical: RangeVertical[]; rangeHorizontal: RangeHorizontal[] } {
-  const { minScopeWidth, maxScopeWidth, minScopeHeight, maxScopeHeight, rangeLeft, rangeTop, rangeRight, rangeBottom } =
+): { rangeCorners: RangeCorners; rangeVertical: RangeVertical[]; rangeHorizontal: RangeHorizontal[] } {
+  const { scopeMinWidth, scopeMaxWidth, scopeMinHeight, scopeMaxHeight, rangeLeft, rangeTop, rangeRight, rangeBottom } =
     getRangeScope(dragElement, dragArea);
   let { left, top } = dragElement.getBoundingClientRect();
 
-  const rangeCorners = [
-    {
-      cornerName: ['left-top', 'top-left'],
+  const rangeCorners = {
+    'top-left': {
       rangeWidth: rangeLeft,
       rangeHeight: rangeTop,
-      snapCoordinates: [minScopeWidth, minScopeHeight],
+      snapCoordinates: [scopeMinWidth, scopeMinHeight],
     },
-    {
-      cornerName: ['right-top', 'top-right'],
+    'top-right': {
       rangeWidth: rangeRight,
       rangeHeight: rangeTop,
-      snapCoordinates: [maxScopeWidth, minScopeHeight],
+      snapCoordinates: [scopeMaxWidth, scopeMinHeight],
     },
-    {
-      cornerName: ['left-bottom', 'bottom-left'],
+    'bottom-left': {
       rangeWidth: rangeLeft,
       rangeHeight: rangeBottom,
-      snapCoordinates: [minScopeWidth, maxScopeHeight],
+      snapCoordinates: [scopeMinWidth, scopeMaxHeight],
     },
-    {
-      cornerName: ['right-bottom', 'bottom-right'],
+    'bottom-right': {
       rangeWidth: rangeRight,
       rangeHeight: rangeBottom,
-      snapCoordinates: [maxScopeWidth, maxScopeHeight],
+      snapCoordinates: [scopeMaxWidth, scopeMaxHeight],
     },
-  ];
+  };
 
   const rangeVertical = [
     {
       rangeWidth: rangeLeft,
-      snapCoordinates: [minScopeWidth, top],
+      snapCoordinates: [scopeMinWidth, top],
     },
     {
       rangeWidth: rangeRight,
-      snapCoordinates: [maxScopeWidth, top],
+      snapCoordinates: [scopeMaxWidth, top],
     },
   ];
 
   const rangeHorizontal = [
     {
       rangeHeight: rangeTop,
-      snapCoordinates: [left, minScopeHeight],
+      snapCoordinates: [left, scopeMinHeight],
     },
     {
       rangeHeight: rangeBottom,
-      snapCoordinates: [left, maxScopeHeight],
+      snapCoordinates: [left, scopeMaxHeight],
     },
   ];
 
