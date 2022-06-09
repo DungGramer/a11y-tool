@@ -6,7 +6,7 @@ export function snapDirection(
   dragElement: HTMLElement | null,
   dragArea: HTMLElement | Window,
   snapPlacement: SnapPlacement | undefined,
-  animate = true
+  hasAnimate = true
 ) {
   if (dragElement === null || dragArea === null || snapPlacement === undefined) return;
 
@@ -55,18 +55,23 @@ export function snapDirection(
       }
       break;
   }
-  if (animate === true) {
+  if (hasAnimate === true) {
     animateDrag(dragElement, left, top, safeInnerRangeX, safeInnerRangeY);
   } else {
     setTargetElementLocation(dragElement, safeInnerRangeX, safeInnerRangeY);
   }
 }
 
-export function setLocalStorage(left: number, top: number, cornerName?: string) {
+export function setLocalStorage(left: number, top: number, cornerName?: string, scopeElement?: Window | HTMLElement) {
   window.localStorage.setItem('left', left.toString());
   window.localStorage.setItem('top', top.toString());
 
   cornerName && window.localStorage.setItem('corner', cornerName);
+  scopeElement &&
+    window.localStorage.setItem(
+      'scopeElement',
+      scopeElement === window ? 'window' : (<HTMLElement>scopeElement).outerHTML
+    );
 }
 
 // Snap to the corner of the scope
@@ -80,8 +85,7 @@ export function snapCorner(dragElement: HTMLElement, dragArea: HTMLElement | Win
   let [safeInnerRangeX, safeInnerRangeY] = [0, 0];
   const { rangeCorners } = getRangeCorners(dragElement, dragArea);
 
-
-  for (const key in rangeCorners ) {
+  for (const key in rangeCorners) {
     const corner = rangeCorners[key as keyof RangeCorners];
     if (
       centerX >= corner.rangeWidth.min &&

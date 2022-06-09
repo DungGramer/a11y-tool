@@ -16,7 +16,7 @@ export function a11y() {
 
   drag({
     dragTarget: ".a11y-tool",
-    // dragArea: 'main',
+    dragArea: 'main',
 
     // initLocation: 'top-right',
     snapPlacement: 'corner',

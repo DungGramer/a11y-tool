@@ -71,19 +71,24 @@ export function drag(props: DragProps) {
 function setInitLocation(targetElement: TargetElement, scopeElement: ScopeElement, initLocation: number[] | undefined) {
   if (targetElement === null || scopeElement === null) return;
 
-  const [leftLocalStorage, topLocalStorage] = [window.localStorage.getItem('left'), window.localStorage.getItem('top')];
+  const [leftLocalStorage, topLocalStorage, scopeStorage] = [
+    window.localStorage.getItem('left'),
+    window.localStorage.getItem('top'),
+    window.localStorage.getItem('scopeElement'),
+  ];
 
   if (initLocation instanceof Array) {
     setTargetElementLocation(targetElement, initLocation);
     setLocalStorage(initLocation[0], initLocation[1]);
   } else if (initLocation !== undefined && snapPlacement.includes(initLocation)) {
     snapDirection(targetElement, scopeElement, initLocation, false);
-  } else if (leftLocalStorage !== null && topLocalStorage !== null) {
+  } else if (leftLocalStorage !== null && topLocalStorage !== null && scopeStorage === (<HTMLElement>scopeElement).outerHTML) {
     setTargetElementLocation(targetElement, leftLocalStorage, topLocalStorage);
   } else {
-    const {rangeCorners} = getRangeCorners(targetElement, scopeElement);
-    const {snapCoordinates} = rangeCorners['bottom-right'];
+    const { rangeCorners } = getRangeCorners(targetElement, scopeElement);
+    const { snapCoordinates } = rangeCorners['top-right'];
 
     setTargetElementLocation(targetElement, snapCoordinates[0], snapCoordinates[1]);
+    setLocalStorage(snapCoordinates[0], snapCoordinates[1], 'top-right', scopeElement);
   }
 }
